@@ -8,7 +8,7 @@ import (
 )
 
 func AddBalance(email string) {
-	db, err := configs.NewMysql()
+	db, err := configs.NewMySQL()
 
 	if err != nil {
 		panic(err)

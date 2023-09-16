@@ -11,13 +11,15 @@ import (
 var secretKey = os.Getenv("SECRET_KEY")
 
 type CustomClaims struct {
-	Email string
+	Email  string
+	UserID string
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(email string) (string, error) {
+func GenerateToken(email, userID string) (string, error) {
 	claims := &CustomClaims{
 		email,
+		userID,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		},

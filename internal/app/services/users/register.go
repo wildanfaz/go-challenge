@@ -57,5 +57,6 @@ func (str *register) Service(c *fiber.Ctx) error {
 		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrDatabase, nil)
 	}
 
+	log.Info(types.Register)
 	return helpers.NewResponse(c, http.StatusCreated, types.Register, nil, nil)
 }

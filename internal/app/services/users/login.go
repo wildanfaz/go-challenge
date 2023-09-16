@@ -52,7 +52,7 @@ func (str *login) Service(c *fiber.Ctx) error {
 	}
 
 	if userDb.Email == "" {
-		log.Warn("user not found")
+		log.Warn(types.ErrUserNotFound)
 		return helpers.NewResponse(c, http.StatusNotFound, types.Default, types.ErrUserNotFound, nil)
 	}
 
@@ -61,13 +61,14 @@ func (str *login) Service(c *fiber.Ctx) error {
 		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrComparePassword, nil)
 	}
 
-	ss, err := auth.GenerateToken(user.Email)
+	ss, err := auth.GenerateToken(user.Email, userDb.ID.String())
 
 	if err != nil {
 		log.Errorf("login got error : %v", err)
 		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrInvalidToken, nil)
 	}
 
+	log.Info(types.Login)
 	return helpers.NewResponse(c, http.StatusOK, types.Login, nil, map[string]string{
 		"token": ss,
 	})

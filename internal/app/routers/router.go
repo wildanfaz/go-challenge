@@ -16,7 +16,7 @@ func New() {
 	app := fiber.New()
 
 	// init db
-	db, err := configs.NewMysql()
+	db, err := configs.NewMySQL()
 
 	if err != nil {
 		panic(err)
@@ -43,7 +43,7 @@ func New() {
 
 	app.Post("/add/cart", addToShoppingCart)
 	app.Post("/checkout", checkoutAndPayment)
-	app.Delete("/delete/cart/:id", deleteInShoppingCart)
+	app.Delete("/delete/cart/:product_id", deleteInShoppingCart)
 	app.Get("/list/cart", listInShoppingCart)
 	app.Get("/list/products", listProducts)
 

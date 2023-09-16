@@ -29,6 +29,7 @@ func Auth(c *fiber.Ctx) error {
 	}
 
 	c.Context().SetUserValue("email", claims.Email)
+	c.Context().SetUserValue("user_id", claims.UserID)
 
 	return c.Next()
 }

@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func NewMysql() (*sql.DB, error) {
+func NewMySQL() (*sql.DB, error) {
 	user := os.Getenv("MYSQL_USER")
 	password := os.Getenv("MYSQL_PASSWORD")
 	dbName := os.Getenv("MYSQL_DATABASE")

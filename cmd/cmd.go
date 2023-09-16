@@ -45,6 +45,14 @@ var addBalance = &cobra.Command{
 	},
 }
 
+var dumy = &cobra.Command{
+	Use:   "dumy",
+	Short: "Insert Products's Dumy",
+	Run: func(cmd *cobra.Command, args []string) {
+		migrations.Dumy()
+	},
+}
+
 func Start() error {
 	root.PersistentFlags().StringVar(&email, "email", "example@mail.com", "user's email")
 	viper.BindPFlag("email", root.PersistentFlags().Lookup("email"))
@@ -53,6 +61,7 @@ func Start() error {
 	root.AddCommand(migrate)
 	root.AddCommand(rollback)
 	root.AddCommand(addBalance)
+	root.AddCommand(dumy)
 
 	return root.Execute()
 }
