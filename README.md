@@ -30,7 +30,7 @@ Skill test using fiber's framework
 3. Run the project:
 
    ```sh
-   docker compose -f ./deployments/docker-compose.yml up -d
+   docker compose -f ./deployments/docker-compose.yml up
    ```
 
 ## Usage
