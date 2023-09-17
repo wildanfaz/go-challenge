@@ -13,16 +13,24 @@ import (
 
 type list_in_shopping_cart struct {
 	repo repositories.Products
+	user repositories.Auth
 }
 
-func NewListInShoppingCart(repo repositories.Products) services.Service {
-	var listInShoppingCart = list_in_shopping_cart{repo: repo}
+func NewListInShoppingCart(repo repositories.Products, user repositories.Auth) services.Service {
+	var listInShoppingCart = list_in_shopping_cart{repo: repo, user: user}
 
 	return listInShoppingCart.Service
 }
 
 func (str *list_in_shopping_cart) Service(c *fiber.Ctx) error {
-	products, err := str.repo.ListProductsInCart(c.Context())
+	user, err := str.user.GetUserByEmail(c.Context(), c.Context().Value("email").(string))
+
+	if err != nil {
+		log.Errorf("list products in cart got error : %v", err)
+		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrDatabase, nil)
+	}
+
+	products, err := str.repo.ListProductsInCart(c.Context(), user.ID.String())
 
 	if err != nil {
 		log.Errorf("list products in cart got error : %v", err)

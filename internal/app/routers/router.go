@@ -29,10 +29,10 @@ func New() {
 	// init service
 	register := users.NewRegister(Auth)
 	login := users.NewLogin(Auth)
-	addToShoppingCart := products.NewAddToShoppingCart(Products)
-	checkoutAndPayment := products.NewCheckoutAndPayment(Products)
-	deleteInShoppingCart := products.NewDeleteInShoppingCart(Products)
-	listInShoppingCart := products.NewListInShoppingCart(Products)
+	addToShoppingCart := products.NewAddToShoppingCart(Products, Auth)
+	checkoutAndPayment := products.NewCheckoutAndPayment(Products, Auth)
+	deleteInShoppingCart := products.NewDeleteInShoppingCart(Products, Auth)
+	listInShoppingCart := products.NewListInShoppingCart(Products, Auth)
 	listProducts := products.NewListProducts(Products)
 
 	app.Post("/register", register)

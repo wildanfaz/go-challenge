@@ -61,7 +61,7 @@ func (str *login) Service(c *fiber.Ctx) error {
 		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrComparePassword, nil)
 	}
 
-	ss, err := auth.GenerateToken(user.Email, userDb.ID.String())
+	ss, err := auth.GenerateToken(user.Email)
 
 	if err != nil {
 		log.Errorf("login got error : %v", err)

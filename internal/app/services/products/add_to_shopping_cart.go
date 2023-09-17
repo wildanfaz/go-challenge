@@ -15,10 +15,11 @@ import (
 
 type add_to_shopping_cart struct {
 	repo repositories.Products
+	user repositories.Auth
 }
 
-func NewAddToShoppingCart(repo repositories.Products) services.Service {
-	var addToShoppingCart = add_to_shopping_cart{repo: repo}
+func NewAddToShoppingCart(repo repositories.Products, user repositories.Auth) services.Service {
+	var addToShoppingCart = add_to_shopping_cart{repo: repo, user: user}
 
 	return addToShoppingCart.Service
 }
@@ -33,7 +34,14 @@ func (str *add_to_shopping_cart) Service(c *fiber.Ctx) error {
 		return helpers.NewResponse(c, http.StatusUnprocessableEntity, types.Default, types.ErrRequestBody, nil)
 	}
 
-	addProductToCart.UserID = c.Context().Value("user_id").(string)
+	user, err := str.user.GetUserByEmail(c.Context(), c.Context().Value("email").(string))
+
+	if err != nil {
+		log.Errorf("add product to cart got error : %v", err)
+		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrDatabase, nil)
+	}
+
+	addProductToCart.UserID = user.ID.String()
 
 	if err := validation.ValidateStruct(&addProductToCart,
 		validation.Field(&addProductToCart.UserID, validation.Required),

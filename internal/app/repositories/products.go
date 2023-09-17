@@ -3,11 +3,11 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/wildanfaz/go-challenge/internal/app/entities"
+	"github.com/wildanfaz/go-challenge/internal/app/types"
 	"github.com/wildanfaz/go-challenge/pkg/utils"
 )
 
@@ -15,11 +15,11 @@ type Products interface {
 	AddProductToCart(ctx context.Context, product entities.AddProductToCart) error
 	ListProducts(ctx context.Context, product entities.Product) (*entities.Products, error)
 	CheckProduct(ctx context.Context, productID string) (bool, error)
-	ListProductsInCart(ctx context.Context) (*entities.ProductsInCart, error)
-	DeleteInShoppingCart(ctx context.Context, productID string) error
-	CheckProductInCart(ctx context.Context, productID string) (bool, error)
-	CheckBalance(ctx context.Context) (int, bool, error)
-	CheckoutAndPayment(ctx context.Context, balance int) error
+	ListProductsInCart(ctx context.Context, userID string) (*entities.ProductsInCart, error)
+	DeleteInShoppingCart(ctx context.Context, userID, productID string) error
+	CheckProductInCart(ctx context.Context, userID, productID string) (bool, error)
+	CheckBalance(ctx context.Context, userID string) (int, bool, error)
+	CheckoutAndPayment(ctx context.Context, balance int, userID string) error
 }
 
 type ProductsRepo struct {
@@ -121,11 +121,10 @@ func (str *ProductsRepo) CheckProduct(ctx context.Context, productID string) (bo
 	return true, nil
 }
 
-func (str *ProductsRepo) ListProductsInCart(ctx context.Context) (*entities.ProductsInCart, error) {
+func (str *ProductsRepo) ListProductsInCart(ctx context.Context, userID string) (*entities.ProductsInCart, error) {
 	var (
 		scanProduct entities.ProductInCart
 		products    entities.ProductsInCart
-		userID      = ctx.Value("user_id")
 	)
 
 	q := `SELECT p.id, p.name, p.description, p.category, p.price, c.amount, p.created_at, p.updated_at 
@@ -157,22 +156,22 @@ func (str *ProductsRepo) ListProductsInCart(ctx context.Context) (*entities.Prod
 	return &products, nil
 }
 
-func (str *ProductsRepo) DeleteInShoppingCart(ctx context.Context, productID string) error {
+func (str *ProductsRepo) DeleteInShoppingCart(ctx context.Context, userID, productID string) error {
 	if _, err := str.db.ExecContext(ctx, "DELETE FROM carts WHERE user_id=? AND product_id=?",
-		ctx.Value("user_id"), productID); err != nil {
+		userID, productID); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (str *ProductsRepo) CheckProductInCart(ctx context.Context, productID string) (bool, error) {
+func (str *ProductsRepo) CheckProductInCart(ctx context.Context, userID, productID string) (bool, error) {
 	var (
 		count int
 	)
 
 	if err := str.db.QueryRowContext(ctx, "SELECT count(id) FROM carts WHERE user_id=? AND product_id=?",
-		ctx.Value("user_id"), productID).
+		userID, productID).
 		Scan(&count); err != nil {
 		return false, err
 	}
@@ -184,10 +183,10 @@ func (str *ProductsRepo) CheckProductInCart(ctx context.Context, productID strin
 	return true, nil
 }
 
-func (str *ProductsRepo) CheckBalance(ctx context.Context) (int, bool, error) {
+func (str *ProductsRepo) CheckBalance(ctx context.Context, userID string) (int, bool, error) {
 	var (
 		balance int
-		cost    int
+		cost    *int
 	)
 
 	q := `SELECT SUM(p.price * c.amount) as cost FROM products p 
@@ -196,15 +195,17 @@ func (str *ProductsRepo) CheckBalance(ctx context.Context) (int, bool, error) {
 	WHERE c.user_id=? AND pm.cart_id IS NULL
 	`
 
-	if err := str.db.QueryRowContext(ctx, q, ctx.Value("user_id")).Scan(&cost); err != nil {
+	if err := str.db.QueryRowContext(ctx, q, userID).Scan(&cost); err != nil {
 		return 0, false, err
 	}
 
-	if err := str.db.QueryRowContext(ctx, "SELECT balance FROM users WHERE id=?", ctx.Value("user_id")).Scan(&balance); err != nil {
+	if err := str.db.QueryRowContext(ctx, "SELECT balance FROM users WHERE id=?", userID).Scan(&balance); err != nil {
 		return 0, false, err
 	}
 
-	balance -= cost
+	if cost != nil {
+		balance -= *cost
+	}
 
 	if balance < 0 {
 		return 0, false, nil
@@ -213,7 +214,7 @@ func (str *ProductsRepo) CheckBalance(ctx context.Context) (int, bool, error) {
 	return balance, true, nil
 }
 
-func (str *ProductsRepo) CheckoutAndPayment(ctx context.Context, balance int) error {
+func (str *ProductsRepo) CheckoutAndPayment(ctx context.Context, balance int, userID string) error {
 	var (
 		cartID  string
 		cartsID []string
@@ -228,7 +229,7 @@ func (str *ProductsRepo) CheckoutAndPayment(ctx context.Context, balance int) er
 		return err
 	}
 
-	if _, err := tx.ExecContext(ctx, q, balance, ctx.Value("user_id")); err != nil {
+	if _, err := tx.ExecContext(ctx, q, balance, userID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -238,7 +239,7 @@ func (str *ProductsRepo) CheckoutAndPayment(ctx context.Context, balance int) er
 	JOIN users u ON u.id=c.user_id
 	LEFT JOIN payments p ON p.cart_id=c.id
 	WHERE u.id=? AND p.cart_id IS NULL
-	`, ctx.Value("user_id"))
+	`, userID)
 
 	if err != nil {
 		tx.Rollback()
@@ -257,7 +258,7 @@ func (str *ProductsRepo) CheckoutAndPayment(ctx context.Context, balance int) er
 	}
 
 	if len(cartsID) < 1 {
-		return errors.New("carts not found")
+		return types.ErrCartNotFound
 	}
 
 	for _, v := range cartsID {

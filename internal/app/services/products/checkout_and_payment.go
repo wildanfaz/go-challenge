@@ -13,16 +13,24 @@ import (
 
 type checkout_and_payment struct {
 	repo repositories.Products
+	user repositories.Auth
 }
 
-func NewCheckoutAndPayment(repo repositories.Products) services.Service {
-	var checkoutAndPayment = checkout_and_payment{repo: repo}
+func NewCheckoutAndPayment(repo repositories.Products, user repositories.Auth) services.Service {
+	var checkoutAndPayment = checkout_and_payment{repo: repo, user: user}
 
 	return checkoutAndPayment.Service
 }
 
 func (str *checkout_and_payment) Service(c *fiber.Ctx) error {
-	balance, enough, err := str.repo.CheckBalance(c.Context())
+	user, err := str.user.GetUserByEmail(c.Context(), c.Context().Value("email").(string))
+
+	if err != nil {
+		log.Errorf("checkout and payment got error : %v", err)
+		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrDatabase, nil)
+	}
+
+	balance, enough, err := str.repo.CheckBalance(c.Context(), user.ID.String())
 
 	if err != nil {
 		log.Errorf("checkout and payment got error : %v", err)
@@ -34,9 +42,16 @@ func (str *checkout_and_payment) Service(c *fiber.Ctx) error {
 		return helpers.NewResponse(c, http.StatusUnprocessableEntity, types.Default, types.ErrInsufficientBalance, nil)
 	}
 
-	if err = str.repo.CheckoutAndPayment(c.Context(), balance); err != nil {
+	err = str.repo.CheckoutAndPayment(c.Context(), balance, user.ID.String())
+
+	if err != nil && err != types.ErrCartNotFound {
 		log.Errorf("checkout and payment got error : %v", err)
 		return helpers.NewResponse(c, http.StatusInternalServerError, types.Default, types.ErrDatabase, nil)
+	}
+
+	if err != nil && err == types.ErrCartNotFound {
+		log.Errorf("checkout and payment got error : %v", err)
+		return helpers.NewResponse(c, http.StatusNotFound, types.Default, types.ErrCartNotFound, nil)
 	}
 
 	log.Info(types.CheckoutAndPayment)

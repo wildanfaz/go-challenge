@@ -10,6 +10,7 @@ var (
 	ErrInvalidToken          = errors.New("invalid token")
 	ErrUserNotFound          = errors.New("user not found")
 	ErrProductNotFound       = errors.New("product not found")
+	ErrCartNotFound          = errors.New("cart not found")
 	ErrProductInCartNotFound = errors.New("product in cart not found")
 	ErrInsufficientBalance   = errors.New("insufficient balance")
 )
