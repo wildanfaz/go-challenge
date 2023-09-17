@@ -11,6 +11,8 @@ services:
         MYSQL_DATABASE: test
         MYSQL_USER: root
         MYSQL_PASSWORD: wildanfaz
+        MYSQL_PORT: 3306
+        MYSQL_HOST: db
         SECRET_KEY: bVJ9bU4LYQnhTcdghrk66
       depends_on:
       - db
