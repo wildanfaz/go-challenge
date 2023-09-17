@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+    go-challenge:
+      container_name: go-challenge
+      image: muhamadwildanfaz/go-challenge
+      ports:
+      - 3000:3000
+      environment:
+        APP_PORT: :3000
+        MYSQL_DATABASE: test
+        MYSQL_USER: root
+        MYSQL_PASSWORD: wildanfaz
+        SECRET_KEY: bVJ9bU4LYQnhTcdghrk66
+      depends_on:
+      - db
+
+    db:
+      container_name: db
+      image: mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: wildanfaz
+        MYSQL_DATABASE: test
+      ports:
+      - 3306:3306
